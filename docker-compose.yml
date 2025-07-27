@@ -1,13 +1,33 @@
+version: '3.8' # Use a recent Docker Compose file format
+
 services:
   mongo:
-    image: mongo:latest
-    container_name: kanban-mongo
+    image: mongo:latest # Use the latest official MongoDB image
+    container_name: kanban-mongo # A friendly name for your MongoDB container
     ports:
-      - "27017:27017"
+      - "27017:27017" # Map host port 27017 to container port 27017 (for external access/tools)
     volumes:
-      - mongo-data:/data/db
+      - mongo-data:/data/db # Persist MongoDB data to a named volume
     environment:
-      - MONGO_INITDB_DATABASE=kanban_db
+      # These variables are for MongoDB's initial setup.
+      # MONGO_INITDB_ROOT_USERNAME: your_admin_username (Uncomment and set for production)
+      # MONGO_INITDB_ROOT_PASSWORD: your_admin_password (Uncomment and set for production)
+      - MONGO_INITDB_DATABASE=kanban_db # Sets the default database for initial connection
+
+  kanban-api:
+    build: . # Tells Docker Compose to build the image from the Dockerfile in the current directory
+    container_name: kanban-api-app
+    ports:
+      - "8080:8080" # Map host port 8080 to container port 8080
+    environment:
+      # This is CRUCIAL: Tell Spring Boot how to connect to the 'mongo' service
+      - MONGO_DB_URI=mongodb://mongo:27017/kanban_db
+      - JWT_SECRET_KEY=89287e6b51cac4055ae5c23cf8258e6b8ecf09e9636f2dfc755570bd2ec185cc
+      # Add other environment variables your Spring Boot app needs
+    depends_on:
+      - mongo # Ensures 'mongo' service starts before 'kanban-api'
+    # Optional: If your Spring Boot app takes time to start up and connect
+    # restart: on-failure # Always restart if the container exits with a non-zero code
 
 volumes:
-  mongo-data:
+  mongo-data: # Define the named volume for MongoDB data persistence
